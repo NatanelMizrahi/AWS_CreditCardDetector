@@ -1,0 +1,52 @@
+@startuml
+actor        user
+entity       app
+control      threadPool as TP
+collections  workers as W
+entity       reader as RD
+entity       parser as P
+boundary     s3client
+database     s3
+
+entity patternTableParser as PTP
+collections webpages as WEB
+database     patternCache as C
+P -> PTP: get_pattern_data
+PTP -> C: get_pattern_data
+PTP <-- C: cached pattern_data
+PTP --> P : cached pattern_data
+loop async for url in table_urls
+    PTP -> WEB: HTTP.get(url)
+    PTP <- WEB: <html>
+    ...
+    PTP -> PTP: parse table
+end
+PTP --> C : pattern data
+PTP --> P : pattern_data
+
+user -> app: s3 credentials
+app -> s3client : list_docs req
+s3client -> s3: list_objects req
+...
+s3client <- s3: list_objects res
+s3client -> app: document key list
+app -> TP : documents info
+loop async for file in bucket
+    TP -> W: extract_doc_cc_numbers(file.key)
+    W  -> s3client: getfile(file.key)
+    s3 <- s3client: get_object(bucket,file.key)
+    ...
+    s3 -> s3client: resp
+    s3client <- s3client: resp.read(MAX_BYTES)
+
+    W <- s3client : file.raw_bytes
+    W -> RD: file.raw_bytes
+    W <- RD: file.text
+    W -> P : file.text
+    W <- P : List[CreditCardInfo]
+    W -> user : report progress
+    W -> TP : List[CreditCardInfo]
+end
+TP -> app: aggregated List[CreditCardInfo]
+app -> user: CreditCardInfo csv
+@enduml
