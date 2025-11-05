@@ -7,7 +7,7 @@ A python app that asynchronously parses documents in a given AWS S3 bucket and c
 2. Run `python3 app.py`
 3. View output in `output/out.csv`
 
-## High Level Architecture
+## High Level Sequence Diagram
 ![HL architecture](https://github.com/NatanelMizrahi/AWS_CreditCardDetector/blob/master/docs/SequenceDiagram.png)
 
 ## Notes
